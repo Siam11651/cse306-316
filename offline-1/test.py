@@ -14,7 +14,7 @@ for line in file_list:
 
     # because frigging logisim does truth table in lsb first format 🤲
     op = line[8:11]
-    op = op[:-1]
+    op = op[::-1]
     A = line[:4]
     A = A[::-1]
     B = line[4:8]
