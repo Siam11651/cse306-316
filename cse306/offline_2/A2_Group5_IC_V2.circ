@@ -677,6 +677,10 @@ This file is intended to be loaded by Logisim (http://www.cburch.com/logisim/).
       <a name="width" val="11"/>
       <a name="value" val="0x0"/>
     </comp>
+    <comp lib="6" loc="(731,717)" name="Text">
+      <a name="text" val="32 Bit Adder"/>
+      <a name="halign" val="left"/>
+    </comp>
     <comp lib="0" loc="(180,70)" name="Pin">
       <a name="width" val="32"/>
       <a name="tristate" val="false"/>
