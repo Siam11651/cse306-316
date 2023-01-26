@@ -12,10 +12,12 @@
 #define IN_RIGHT2 9 // motor B spin 2
 
 // speed factor
-#define FACTOR 1.0// average fraction of total voltage (PWM)
+#define FACTOR 0.3// average fraction of total voltage (PWM)
 
 // loop delay
 #define DELTA 10.0 // ms
+#define HORIZONTAL_THRESHOLD 400
+#define VERTICAL_THRESHOLD 1
 
 void Forward()
 {
@@ -102,15 +104,15 @@ void loop()
     int motorSpeedA = 0;
     int motorSpeedB = 0;
 
-    if(470 < yAxisInput && yAxisInput < 550) // if y axis not in threshold move left right
+    if(VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD) // if y axis not in threshold move left right
     {
-        if(470 < xAxisInput && xAxisInput < 550)
+        if(HORIZONTAL_THRESHOLD < xAxisInput && xAxisInput < 1023 - HORIZONTAL_THRESHOLD)
         {
             Stop();
         }
         else
         {
-            if(xAxisInput < 470)
+            if(xAxisInput < HORIZONTAL_THRESHOLD)
             {
                 motorSpeedA = map(yAxisInput, 470, 0, 0, 255);
                 motorSpeedB = map(yAxisInput, 470, 0, 0, 255);
@@ -128,7 +130,7 @@ void loop()
     }
     else
     {
-        if(yAxisInput < 470)
+        if(yAxisInput < VERTICAL_THRESHOLD)
         {
             motorSpeedA = map(yAxisInput, 470, 0, 0, 255);
             motorSpeedB = map(yAxisInput, 470, 0, 0, 255);
