@@ -88,7 +88,7 @@ void Right()
 }
 
 void Stop()
-{
+{  
   if(state== "f")
   {
      Forward();       
@@ -101,7 +101,7 @@ void Stop()
   {
       Right();
   }
-  else if(command == "l")
+  else if(state == "l")
   {
       Left();
   }
@@ -146,19 +146,14 @@ void loop()
       onInput = true; 
       if(c != '\\')
       {
-        if('a' <= c && c <= 'z')
+        if('a' <= c && c <= 'z' || c == '$')
         {
           command += c;
         }
       }
       else
       {
-        break;
-      }
-     
-    }
-    // Serial.println("command = " + command);
-    if(command[0]=='$')
+        if(command =="$")
         {
           state = "stall";
         }
@@ -167,6 +162,12 @@ void loop()
           state = command;
         }
         onInput = false;
+        
+        break;
+      }
+     
+    }
+    // Serial.println("command = " + command);
     
     if(VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD) // if y axis not in threshold move left right
     {
