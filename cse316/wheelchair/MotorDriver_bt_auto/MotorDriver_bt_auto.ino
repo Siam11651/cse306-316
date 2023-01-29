@@ -1,4 +1,9 @@
 #include<SPI.h>
+#include<SoftwareSerial.h>
+
+SoftwareSerial sSerial(11, 12);
+
+bool onInput;
 
 #define X_AXIS_PIN A1 // left-right
 #define Y_AXIS_PIN A0 // front-back
@@ -24,7 +29,7 @@
 #define VERTICAL_THRESHOLD 1
 
 int bt_flag=0;
-String command="";
+char command;
 void Forward()
 {
     digitalWrite(IN_LEFT1, HIGH);
@@ -83,42 +88,38 @@ void Right()
 
 void Stop()
 {
+  if(command == "forward")
+  {
+     Forward();       
+  }
+  else if(command == "backward")
+  {
+      Backward();
+  }
+  else if(command == "right")
+  {
+      Right();
+  }
+  else if(command == "left")
+  {
+      Left();
+  }
+  else
+  {
     digitalWrite(IN_LEFT1, LOW);
     digitalWrite(IN_LEFT2, LOW);
     digitalWrite(IN_RIGHT1, LOW);
     digitalWrite(IN_RIGHT2, LOW);
-    Serial.println(command);
-    if(command == "forward")
-    {
-       Forward();
-       command = "";
-       
-    }
-    else if(command == "backward")
-    {
-        Backward();
-        command = "";
-    }
-    else if(command == "right")
-    {
-        Right();
-        command = "";
-    }
-    else if(command == "left")
-    {
-        Left();
-        command = "";
-    }
-    else
-    {
-      
-    }
     delay(DELTA);
+  }
 }
 
 void setup()
 {
+  onInput = true;
+  
     Serial.begin(9600);
+    sSerial.begin(9600);
     pinMode(SW_PIN, INPUT);
     digitalWrite(SW_PIN, HIGH);
     pinMode(X_AXIS_PIN, INPUT);
@@ -132,17 +133,31 @@ void setup()
 }
 void loop()
 {
-  
+  command = '$';
   int xAxisInput = analogRead(X_AXIS_PIN);
     int yAxisInput = analogRead(Y_AXIS_PIN);
     int joystickinput =  digitalRead(SW_PIN);
-
-    Serial.print(joystickinput);
     
-    if(Serial.available())
-    {
-        command += Serial.readString();
+    if(sSerial.available())
+    {      
+      char c = sSerial.read();
+      
+      if(c != '\\')
+      {
+        if('a' <= c && c <= 'z')
+        {
+          command += c;
+          onInput = true;
+        }
+      }
+      else
+      {
+        // Serial.println("command = " + command);
+
+        onInput = false;
+      }
     }
+    
     if(VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD) // if y axis not in threshold move left right
     {
         if(HORIZONTAL_THRESHOLD < xAxisInput && xAxisInput < 1023 - HORIZONTAL_THRESHOLD)
@@ -153,7 +168,7 @@ void loop()
         {
             if(xAxisInput < HORIZONTAL_THRESHOLD)
             {
-               
+         
                 Left();
             }
             else
@@ -175,5 +190,9 @@ void loop()
             Backward();
         }
     }
-    
+
+    if(!onInput)
+    {
+      command = "";
+    }
 }
