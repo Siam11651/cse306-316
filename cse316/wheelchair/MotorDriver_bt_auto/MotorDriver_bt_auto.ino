@@ -29,7 +29,8 @@ bool onInput;
 #define VERTICAL_THRESHOLD 1
 
 int bt_flag=0;
-char command;
+String command;
+String state = "stall";
 void Forward()
 {
     digitalWrite(IN_LEFT1, HIGH);
@@ -88,19 +89,19 @@ void Right()
 
 void Stop()
 {
-  if(command == "forward")
+  if(state== "f")
   {
      Forward();       
   }
-  else if(command == "backward")
+  else if(state == "b")
   {
       Backward();
   }
-  else if(command == "right")
+  else if(state == "r")
   {
       Right();
   }
-  else if(command == "left")
+  else if(command == "l")
   {
       Left();
   }
@@ -133,30 +134,39 @@ void setup()
 }
 void loop()
 {
-  command = '$';
+  //command = '$';
   int xAxisInput = analogRead(X_AXIS_PIN);
     int yAxisInput = analogRead(Y_AXIS_PIN);
     int joystickinput =  digitalRead(SW_PIN);
     
-    if(sSerial.available())
-    {      
+    for(int i=0;i<sSerial.available();i++)
+    {   
+         
       char c = sSerial.read();
-      
+      onInput = true; 
       if(c != '\\')
       {
         if('a' <= c && c <= 'z')
         {
           command += c;
-          onInput = true;
         }
       }
       else
       {
-        // Serial.println("command = " + command);
-
-        onInput = false;
+        break;
       }
+     
     }
+    // Serial.println("command = " + command);
+    if(command[0]=='$')
+        {
+          state = "stall";
+        }
+        else
+        {
+          state = command;
+        }
+        onInput = false;
     
     if(VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD) // if y axis not in threshold move left right
     {
