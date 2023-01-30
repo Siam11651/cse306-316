@@ -11,21 +11,17 @@ int acceleration;
 
 SoftwareSerial sSerial(11, 12);
 
-bool onInput;
-
 #define X_AXIS_PIN A1  // left-right
 #define Y_AXIS_PIN A0  // front-back
-// #define SW_PIN 10
+#define SW_PIN 10
 
 // motor left
-#define ENABLE_LEFT 5  // enable motor A
-#define IN_LEFT1 6     // motor A spin 1
-#define IN_LEFT2 7     // motor A spin 2
+#define IN_LEFT1 6  // motor A spin 1
+#define IN_LEFT2 7  // motor A spin 2
 
 // motor right
-#define ENABLE_RIGHT 10  // enable motor B
-#define IN_RIGHT1 8      // motor B spin 1
-#define IN_RIGHT2 9      // motor B spin 2
+#define IN_RIGHT1 8  // motor B spin 1
+#define IN_RIGHT2 9  // motor B spin 2
 
 // speed factor
 #define FACTOR 0.3  // average fraction of total voltage (PWM)
@@ -33,12 +29,15 @@ bool onInput;
 // loop delay
 #define DELTA 10.0  // ms
 #define HORIZONTAL_THRESHOLD 400
-
 #define VERTICAL_THRESHOLD 100
 
-// int bt_flag = 0;
-String command;
-String state = "stall";
+//bluetooh items
+
+bool bt_flag = true;
+String command = "";
+String state = "";
+bool onInput;
+
 void Forward() {
   digitalWrite(IN_LEFT1, HIGH);
   digitalWrite(IN_LEFT2, LOW);
@@ -49,7 +48,6 @@ void Forward() {
   digitalWrite(IN_LEFT2, LOW);
   digitalWrite(IN_RIGHT1, LOW);
   digitalWrite(IN_RIGHT2, LOW);
-
   delay(DELTA * (1.0 - FACTOR));
 }
 
@@ -93,35 +91,22 @@ void Right() {
 }
 
 void Stop() {
-  if (state == "f") {
-    Forward();
-  } else if (state == "b") {
-    Backward();
-  } else if (state == "r") {
-    Right();
-  } else if (state == "l") {
-    Left();
-  } else {
-    digitalWrite(IN_LEFT1, LOW);
-    digitalWrite(IN_LEFT2, LOW);
-    digitalWrite(IN_RIGHT1, LOW);
-    digitalWrite(IN_RIGHT2, LOW);
-    delay(DELTA);
-  }
+  digitalWrite(IN_LEFT1, LOW);
+  digitalWrite(IN_LEFT2, LOW);
+  digitalWrite(IN_RIGHT1, LOW);
+  digitalWrite(IN_RIGHT2, LOW);
+  delay(DELTA);
 }
 
 void setup() {
-  onInput = true;
-
+  // Serial.begin(9600);
   sSerial.begin(9600);
-  // pinMode(SW_PIN, INPUT);
-  // digitalWrite(SW_PIN, HIGH);
+  pinMode(SW_PIN, INPUT);
+  digitalWrite(SW_PIN, HIGH);
   pinMode(X_AXIS_PIN, INPUT);
   pinMode(Y_AXIS_PIN, INPUT);
-  pinMode(ENABLE_LEFT, OUTPUT);
   pinMode(IN_LEFT1, OUTPUT);
   pinMode(IN_LEFT2, OUTPUT);
-  pinMode(ENABLE_RIGHT, OUTPUT);
   pinMode(IN_RIGHT1, OUTPUT);
   pinMode(IN_RIGHT2, OUTPUT);
 
@@ -152,8 +137,8 @@ void setup() {
 }
 
 void loop() {
-  //command = '$';
   mpu.getEvent(&a, &g, &temp);
+
   acceleration = a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y + a.acceleration.z * a.acceleration.z;
   Serial.print(acceleration);
   Serial.print(",");
@@ -164,8 +149,7 @@ void loop() {
 
   int xAxisInput = analogRead(X_AXIS_PIN);
   int yAxisInput = analogRead(Y_AXIS_PIN);
-  // int joystickinput = digitalRead(SW_PIN);
-
+  int joystickinput = digitalRead(SW_PIN);
   for (int i = 0; i < sSerial.available(); i++) {
 
     char c = sSerial.read();
@@ -176,43 +160,55 @@ void loop() {
       }
     } else {
       if (command == "$") {
-        state = "stall";
+        state = "";
       } else {
         state = command;
       }
       onInput = false;
-
       break;
     }
   }
-  // Serial.println("command = " + command);
-
-  if (VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD)  // if y axis not in threshold move left right
-  {
-    if (HORIZONTAL_THRESHOLD < xAxisInput && xAxisInput < 1023 - HORIZONTAL_THRESHOLD) {
-      Stop();
-    } else {
-      if (xAxisInput < HORIZONTAL_THRESHOLD) {
-
-        Left();
-      } else {
-
-        Right();
-      }
-    }
-  } else {
-    if (yAxisInput < VERTICAL_THRESHOLD) {
-      Forward();
-      // Serial.println("moving forward");
-    } else {
-      Backward();
-      // Serial.println("moving backward");
-    }
+  if (state == "x") {
+    bt_flag = true;
+  } else if (state == "y") {
+    bt_flag = false;
   }
 
+  if (bt_flag) {
+    if (state == "f") {
+      Forward();
+    } else if (state == "b") {
+      Backward();
+    } else if (state == "r") {
+      Right();
+    } else if (state == "l") {
+      Left();
+    }
+  } else {
+    if (VERTICAL_THRESHOLD < yAxisInput && yAxisInput < 1023 - VERTICAL_THRESHOLD)  // if y axis not in threshold move left right
+    {
+      if (HORIZONTAL_THRESHOLD < xAxisInput && xAxisInput < 1023 - HORIZONTAL_THRESHOLD) {
+        Stop();
+      } else {
+        if (xAxisInput < HORIZONTAL_THRESHOLD) {
+          Left();
+        } else {
+          Right();
+        }
+      }
+    } else {
+      if (yAxisInput < VERTICAL_THRESHOLD) {
+
+        Forward();
+      } else {
+
+        Backward();
+      }
+    }
+  }
   if (!onInput) {
     command = "";
   }
-  Serial.println("");
   digitalWrite(LED_BUILTIN, LOW);
+  Serial.println("");
 }
