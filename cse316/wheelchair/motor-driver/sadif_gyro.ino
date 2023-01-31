@@ -33,7 +33,7 @@ SoftwareSerial sSerial(11, 12);
 
 //bluetooh items
 
-bool bt_flag = true;
+bool bt_flag;
 String command = "";
 String state = "";
 bool onInput;
