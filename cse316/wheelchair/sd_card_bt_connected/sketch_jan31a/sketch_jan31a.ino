@@ -191,12 +191,19 @@ void loop() {
       sSerial.write("0");
     }
     state = "";
-    
-  } else if (state[0] == 's') { // checking if first char of state is 's', what follows shall be the 
+
+  } else if (state == "s") {  // checking if state(=command) 's', what follows shall be the num json
+    //json parsing
+    //library job here
+    String number;
+
+    //assuming number in String number
     if (file) {
-      file.println(command);
+      file.println(number);
       file.close();
     }
+  } else if (state == "x") { // number read command
+    
   }
 
   if (bt_flag) {
