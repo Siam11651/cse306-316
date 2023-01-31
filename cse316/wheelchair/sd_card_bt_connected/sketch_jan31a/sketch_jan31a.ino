@@ -141,7 +141,7 @@ void setup() {
     Serial.println("Error: SD not initialized");
   }
 
-  file = SD.open("number.txt", FILE_WRITE | FILE_READ);
+  file = SD.open("number.txt", FILE_WRITE );
 
   delay(100);
 }
@@ -200,10 +200,15 @@ void loop() {
     //assuming number in String number
     if (file) {
       file.println(number);
-      file.close();
+      // file.close();
     }
   } else if (state == "x") { // number read command
-    
+    if (file) {
+      //read and parse json from file, store in string number
+      String number;
+      //send over softwareSerial ports to bt module
+      sSerial.write(number);    
+    }
   }
 
   if (bt_flag) {
