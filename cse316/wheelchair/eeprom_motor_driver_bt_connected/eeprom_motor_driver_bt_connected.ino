@@ -9,8 +9,10 @@ Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
 int acceleration;
 float gyrox,gyroy,gyroz;
+float accx,accy,accz;
 // FILE file;
 const int numberStartAddress = 0;  //starting address of eeprom
+int time_count;
 
 
 SoftwareSerial sSerial(11, 12);
@@ -160,11 +162,20 @@ float absolute(float x)
   return x;
 }
 
+
 void loop() {
   mpu.getEvent(&a, &g, &temp);
-
-  acceleration = a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y + a.acceleration.z * a.acceleration.z;
-//  Serial.print(acceleration);
+  accx=a.acceleration.x;
+  accy=a.acceleration.y;
+  accz=a.acceleration.z;
+//  Serial.print(accx);
+//  Serial.print(",");
+//  Serial.print(accy);
+//  Serial.print(",");
+//  Serial.print(accx);
+//  Serial.print(",");
+//  acceleration = a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y + a.acceleration.z * a.acceleration.z;
+////  Serial.print(acceleration);
 //  Serial.print(",");
   gyrox=absolute(g.gyro.x);
   gyroy=absolute(g.gyro.y);
@@ -183,6 +194,7 @@ void loop() {
   if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5)
   {
     buzzflag=true;
+    time_count=0;
   }
   
   
@@ -197,7 +209,7 @@ void loop() {
   int xAxisInput = analogRead(X_AXIS_PIN);
   int yAxisInput = analogRead(Y_AXIS_PIN);
   int joystickinput = digitalRead(SW_PIN);
-  if(joystickinput == LOW)
+  if(joystickinput == LOW || time_count>500)
   {
     buzzflag=false;
   }
@@ -301,6 +313,7 @@ void loop() {
   if (!onInput) {
     command = "";
   }
+  time_count++;
   digitalWrite(LED_BUILTIN, LOW);
   Serial.println("");
 }
