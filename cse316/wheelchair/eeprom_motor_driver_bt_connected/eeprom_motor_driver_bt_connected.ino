@@ -3,22 +3,21 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
-// #include <SD.h>
 #include <EEPROM.h>
 
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
 int acceleration;
-
+float gyrox,gyroy,gyroz;
 // FILE file;
 const int numberStartAddress = 0;  //starting address of eeprom
 
 
-SoftwareSerial sSerial(4, 5);
+SoftwareSerial sSerial(11, 12);
 
 #define X_AXIS_PIN A1  // left-right
 #define Y_AXIS_PIN A0  // front-back
-// #define SW_PIN 10
+#define SW_PIN 10
 
 // motor left
 #define IN_LEFT1 6  // motor A spin 1
@@ -31,18 +30,21 @@ SoftwareSerial sSerial(4, 5);
 // speed factor
 #define FACTOR 0.3  // average fraction of total voltage (PWM)
 
+// buzzer
+#define BUZZER_OUT 5
+
 // loop delay
 #define DELTA 10.0  // ms
 #define HORIZONTAL_THRESHOLD 400
 #define VERTICAL_THRESHOLD 100
-#define BUZZER_OUTPUT_PIN 12
 
 //bluetooh items
 bool bt_flag;
 String command = "";
 String state = "";
 bool onInput;
-// bool stateCheckedByApp = false;
+String tempnum;
+bool buzzflag;
 
 void Forward() {
   digitalWrite(IN_LEFT1, HIGH);
@@ -105,18 +107,20 @@ void Stop() {
 }
 
 void setup() {
-  // Serial.begin(9600);
+  
   sSerial.begin(9600);
-  // pinMode(SW_PIN, INPUT);
-  // digitalWrite(SW_PIN, HIGH);
+  pinMode(SW_PIN, INPUT);
+  digitalWrite(SW_PIN, HIGH);
+  pinMode(BUZZER_OUT,OUTPUT);
+  digitalWrite(BUZZER_OUT, LOW);
   pinMode(X_AXIS_PIN, INPUT);
   pinMode(Y_AXIS_PIN, INPUT);
   pinMode(IN_LEFT1, OUTPUT);
   pinMode(IN_LEFT2, OUTPUT);
   pinMode(IN_RIGHT1, OUTPUT);
   pinMode(IN_RIGHT2, OUTPUT);
-
   Serial.begin(115200);
+  //Serial.begin(9600);
 
   // Try to initialize!
   if (!mpu.begin()) {
@@ -128,7 +132,6 @@ void setup() {
   // Serial.println("MPU6050 Found!");
 
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(BUZZER_OUTPUT_PIN, OUTPUT);
 
   // set accelerometer range to +-8G
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
@@ -147,22 +150,57 @@ void setup() {
 
   delay(100);
 }
+float absolute(float x)
+{
+  if(x<0)
+  {
+    x=x*(-1);
+    return x;
+  }
+  return x;
+}
 
 void loop() {
   mpu.getEvent(&a, &g, &temp);
 
   acceleration = a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y + a.acceleration.z * a.acceleration.z;
-  Serial.print(acceleration);
-  Serial.print(",");
-  if (acceleration > 130 || acceleration < 70) {
+//  Serial.print(acceleration);
+//  Serial.print(",");
+  gyrox=absolute(g.gyro.x);
+  gyroy=absolute(g.gyro.y);
+  gyroz=absolute(g.gyro.z);
+//  Serial.print(gyrox);
+//  Serial.print(",");
+//  Serial.print(gyroy);
+//  Serial.print(",");
+//  Serial.print(gyroz);
+//  Serial.print(",");
+ /* if (acceleration > 130 || acceleration < 70) {
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    digitalWrite(12, HIGH);
+    
+      }
+  */
+  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5)
+  {
+    buzzflag=true;
   }
-
+  
+  
+  if(buzzflag==true)
+  {
+    digitalWrite(BUZZER_OUT, HIGH);
+  }
+  else
+  {
+    digitalWrite(BUZZER_OUT, LOW);
+  }
   int xAxisInput = analogRead(X_AXIS_PIN);
   int yAxisInput = analogRead(Y_AXIS_PIN);
-  // int joystickinput = digitalRead(SW_PIN);
-  
+  int joystickinput = digitalRead(SW_PIN);
+  if(joystickinput == LOW)
+  {
+    buzzflag=false;
+  }
   for (int i = 0; i < sSerial.available(); i++) {
 
     char c = sSerial.read();
@@ -182,16 +220,16 @@ void loop() {
     }
   }
   
-  if (state == "x") {
-  
+  if (state == "x") { 
     bt_flag = true;
+    state = "";
   } else if (state == "y") {
-  
     bt_flag = false;
+    state="";
   } else if (state == "q") {
     //bt flag on== 1 or off == 0
     if (bt_flag) {
-      sSerial.write("1");  //
+      sSerial.write("1");  
   
     } else {
       // sSerial.print("0");
@@ -201,15 +239,25 @@ void loop() {
     state = "";
 
   } else if (state == "s") {  // checking if state(=command) 's', what follows shall be the number
-    //string parsing job here, store in number
-    String number;
-
+    //string input and parsing job here,
     //assuming phone number in String number, size == 11
-    for (int offset = 0; offset < 11; offset++) {
-      EEPROM.write(numberStartAddress + offset, (int)number[offset]);
+     tempnum= "";
+    for (int offset = 0;offset < sSerial.available(); offset++) {
+      char digit = sSerial.read();
+    if (digit != '\\') {
+      if ('0' <= digit && digit <= '9') {
+         tempnum += digit;
+         EEPROM.write(numberStartAddress + offset, (int)digit);
+      }
+    } else {
+        state = "";
+        //Serial.println(tempnum);
+        break;
+      }
     }
-
-  } else if (state == "k") {  // number read command
+     
+    }
+ else if (state == "k") {  // number read command
     String number = "";
     for (int offset = 0; offset < 11; offset++) {
       number += (char)EEPROM.read(numberStartAddress + offset);
