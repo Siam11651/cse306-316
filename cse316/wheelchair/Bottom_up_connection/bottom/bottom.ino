@@ -13,6 +13,14 @@ float accx,accy,accz;
 // FILE file;
 const int numberStartAddress = 0;  //starting address of eeprom
 int time_count;
+//bluetooh items
+bool bt_flag;
+String command = "";
+String state = "";
+bool onInput;
+String tempnum;
+bool buzzflag;
+bool numsetflag;
 
 
 SoftwareSerial sSerial(11, 12);
@@ -44,14 +52,8 @@ SoftwareSerial dSerial(2, 3);
 #define HORIZONTAL_THRESHOLD 400
 #define VERTICAL_THRESHOLD 100
 
-//bluetooh items
-bool bt_flag;
-String command = "";
-String state = "";
-bool onInput;
-String tempnum;
-bool buzzflag;
-bool numsetflag;
+
+
 void Forward() {
   digitalWrite(IN_LEFT1, HIGH);
   digitalWrite(IN_LEFT2, LOW);
@@ -159,13 +161,7 @@ void read_num()
       //delay(1000);
     }
 }
-void set_num()
-{
-    for (int offset = 0; offset < 11; offset++) {
-      EEPROM.write(numberStartAddress + offset, offset);
-    }
-    numsetflag=true;
-}
+
 void send_num(int dest)
 { 
   char temp[13];
@@ -234,10 +230,9 @@ void setup() {
 void loop() {
   mpu.getEvent(&a, &g, &temp);
   
-  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5)
+  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5 && time_count==0)
   {
     buzzflag=true;
-    time_count=0;
   }
   if(buzzflag==true)
   {
@@ -253,6 +248,7 @@ void loop() {
   if(buzzflag == true && joystickinput == LOW )
   {
     buzzflag=false; 
+    time_count=0;
   }
   if(buzzflag==true && time_count>500)
   {
