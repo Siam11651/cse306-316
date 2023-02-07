@@ -20,7 +20,6 @@ String state = "";
 bool onInput;
 String tempnum;
 bool buzzflag;
-bool numsetflag;
 
 
 
@@ -153,17 +152,27 @@ void read_mpu()
       }
   */
 }
+void set_num()
+{
+  for(int i=0;i<11;i++)
+  {
+    //Serial.println(tempnum[i]);
+    EEPROM.write(numberStartAddress + i, tempnum[i]);  
+  }
+  sSerial.write("2");
+}
 void read_num()
 {
     tempnum = "";
-    for (int offset = 0; offset < 11; offset++) {
-      tempnum += EEPROM.read(numberStartAddress + offset);
-      //Serial.print(tempnum[offset]);
+    for (int offset = 0; offset < 11; offset++) {  
+      
+      tempnum += (char)EEPROM.read(numberStartAddress + offset);
+      //Serial.println((char)EEPROM.read(numberStartAddress + offset));
       //delay(1000);
     }
 }
 
-void send_num(int dest)
+void send_num()
 { 
   char temp[13];
   temp[0]='s';
@@ -172,14 +181,7 @@ void send_num(int dest)
     temp[i]=tempnum[i];
   }
   temp[12]='x';
-  if(dest==0)
-  {
-    dSerial.write(temp,13);
-  }
-  else
-  {
-    sSerial.write(temp,13);
-  }
+  dSerial.write(temp,13);
 }
 void setup() {
   
@@ -197,7 +199,7 @@ void setup() {
   pinMode(IN_LEFT2, OUTPUT);
   pinMode(IN_RIGHT1, OUTPUT);
   pinMode(IN_RIGHT2, OUTPUT);
-  //set_num();
+  read_num();
 
   // Try to initialize!
   if (!mpu.begin()) {
@@ -231,13 +233,13 @@ void setup() {
 void loop() {
   mpu.getEvent(&a, &g, &temp);
   read_mpu();
-Serial.print(gyrox);
-Serial.print(",");
-Serial.print(gyroy);
-Serial.print(",");
-Serial.print(gyroz);
-Serial.print(",");
-Serial.println("");
+//Serial.print(gyrox);
+//Serial.print(",");
+//Serial.print(gyroy);
+//Serial.print(",");
+//Serial.print(gyroz);
+//Serial.print(",");
+//Serial.println("");
   
   if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5 )
   {
@@ -273,15 +275,35 @@ Serial.println("");
   for (int i = 0; i < sSerial.available(); i++) {
 
     char c = sSerial.read();
+    //Serial.println((char)c);
     onInput = true;
     if (c != '\\') {
-      if ('a' <= c && c <= 'z' || c == '$') {
+      if ('a' <= c && c <= 'z' || c == '$' || c == '%') {
         command += c;
+        if(c == 's')
+        {
+          tempnum="";
+        }
+      }
+      else if('0' <= c && c <= '9' && state == "s")
+      {
+        tempnum += c;
+      //  Serial.println(tempnum);   
       }
     } else {
       if (command == "$") {
         state = "";
-      } else {
+      }
+      else if(command == "%")
+      {
+        state = "";
+        dSerial.listen();
+        //Serial.println(tempnum);
+        set_num();
+        send_num();
+        sSerial.listen();
+             }
+      else {
         state = command;
       }
       onInput = false;
@@ -309,30 +331,7 @@ Serial.println("");
     }
     state = "";
 
-  } else if (state == "s") {  // checking if state(=command) 's', what follows shall be the number
-    //string input and parsing job here,
-    //assuming phone number in String number, size == 11
-     tempnum= "";
-    for (int offset = 0;offset < sSerial.available(); offset++) {
-      char digit = sSerial.read();
-    if (digit != '\\') {
-      if ('0' <= digit && digit <= '9') {
-         tempnum += digit;
-         EEPROM.write(numberStartAddress + offset, (int)digit);
-      }
-    } else {
-        state = "";
-        numsetflag=true;
-        break;
-      }
-    }
-     
-    }
- else if (state == "k") {  // number read command
-    read_num();
-    //now number has the 11 digit number, write back to bluetooth module
-      
-    }
+  } 
 
   if (bt_flag) {
     if (state == "f") {
@@ -366,14 +365,7 @@ Serial.println("");
       }
     }
   }
-  if(numsetflag)
-  {
-    dSerial.listen();
-    read_num();
-    send_num(0);
-    numsetflag=false;
-    sSerial.listen();
-  }
+ 
   if (!onInput) {
     command = "";
   }
