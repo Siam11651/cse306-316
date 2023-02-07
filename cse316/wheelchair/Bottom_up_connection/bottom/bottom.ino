@@ -23,8 +23,9 @@ bool buzzflag;
 bool numsetflag;
 
 
-SoftwareSerial sSerial(11, 12);
+
 SoftwareSerial dSerial(2, 3);
+SoftwareSerial sSerial(11, 12);
 
 #define X_AXIS_PIN A1  // left-right
 #define Y_AXIS_PIN A0  // front-back
@@ -182,9 +183,9 @@ void send_num(int dest)
 }
 void setup() {
   
-  sSerial.begin(9600);
   Serial.begin(115200);
   dSerial.begin(19200);
+  sSerial.begin(9600);
   pinMode(SW_PIN, INPUT);
   digitalWrite(SW_PIN, HIGH);
   pinMode(BUZZER_OUT,OUTPUT);
@@ -229,8 +230,16 @@ void setup() {
 
 void loop() {
   mpu.getEvent(&a, &g, &temp);
+  read_mpu();
+Serial.print(gyrox);
+Serial.print(",");
+Serial.print(gyroy);
+Serial.print(",");
+Serial.print(gyroz);
+Serial.print(",");
+Serial.println("");
   
-  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5 && time_count==0)
+  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5 )
   {
     buzzflag=true;
   }
@@ -251,12 +260,15 @@ void loop() {
     time_count=0;
   }
   if(buzzflag==true && time_count>500)
-  {
+  { dSerial.listen();
     dSerial.write("help",4); 
+    sSerial.listen();
   }
   if(buzzflag == false && joystickinput == LOW)
   {
-   dSerial.write("help",4);  
+   dSerial.listen();
+   dSerial.write("help",4); 
+   sSerial.listen(); 
   }
   for (int i = 0; i < sSerial.available(); i++) {
 
@@ -356,9 +368,11 @@ void loop() {
   }
   if(numsetflag)
   {
+    dSerial.listen();
     read_num();
     send_num(0);
     numsetflag=false;
+    sSerial.listen();
   }
   if (!onInput) {
     command = "";
