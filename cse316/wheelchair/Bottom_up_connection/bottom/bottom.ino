@@ -5,6 +5,12 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
+#define GRAVITY
+#define GRAVITY_THRESHOLD 9
+
+bool fallState = false;
+int fallCount = 0;
+
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
 int acceleration;
@@ -20,6 +26,7 @@ String state = "";
 bool onInput;
 String tempnum;
 bool buzzflag;
+bool helpflag;
 
 
 
@@ -148,7 +155,7 @@ void read_mpu()
 //  Serial.print(",");
  /* if (acceleration > 130 || acceleration < 70) {
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    
+
       }
   */
 }
@@ -156,16 +163,16 @@ void set_num()
 {
   for(int i=0;i<11;i++)
   {
-    //Serial.println(tempnum[i]);
-    EEPROM.write(numberStartAddress + i, tempnum[i]);  
+    Serial.println(tempnum[i]);
+    EEPROM.write(numberStartAddress + i, tempnum[i]);
   }
   sSerial.write("2");
 }
 void read_num()
 {
     tempnum = "";
-    for (int offset = 0; offset < 11; offset++) {  
-      
+    for (int offset = 0; offset < 11; offset++) {
+
       tempnum += (char)EEPROM.read(numberStartAddress + offset);
       //Serial.println((char)EEPROM.read(numberStartAddress + offset));
       //delay(1000);
@@ -173,18 +180,18 @@ void read_num()
 }
 
 void send_num()
-{ 
+{
   char temp[13];
   temp[0]='s';
   for(int i=1;i<12;i++)
   {
-    temp[i]=tempnum[i];
+    temp[i]=tempnum[i-1];
   }
   temp[12]='x';
   dSerial.write(temp,13);
 }
 void setup() {
-  
+
   Serial.begin(115200);
   dSerial.begin(19200);
   sSerial.begin(9600);
@@ -200,6 +207,10 @@ void setup() {
   pinMode(IN_RIGHT1, OUTPUT);
   pinMode(IN_RIGHT2, OUTPUT);
   read_num();
+  dSerial.listen();
+  send_num();
+  sSerial.listen();
+
 
   // Try to initialize!
   if (!mpu.begin()) {
@@ -226,24 +237,90 @@ void setup() {
   // }
 
   // file = SD.open("number.txt", FILE_WRITE);
-
+  
   delay(100);
 }
 
 void loop() {
+  int xAxisInput = analogRead(X_AXIS_PIN);
+  int yAxisInput = analogRead(Y_AXIS_PIN);
+  int joystickinput = digitalRead(SW_PIN);
   mpu.getEvent(&a, &g, &temp);
   read_mpu();
-//Serial.print(gyrox);
-//Serial.print(",");
-//Serial.print(gyroy);
-//Serial.print(",");
-//Serial.print(gyroz);
-//Serial.print(",");
-//Serial.println("");
-  
-  if(gyrox > 0.5 && gyroy > 0.5  && gyroz > 0.5 )
+// Serial.print(accx);
+// Serial.print(",");
+// Serial.print(accy);
+// Serial.print(",");
+// Serial.print(accz);
+// Serial.print(",");
+
+  // Serial.println("z = " + String(accz));
+  // Serial.println("side = " + String(accx * accx + accy * accy));
+
+  if(accz < 0 || accz < 3 && accx * accx + accy * accy > GRAVITY_THRESHOLD * GRAVITY_THRESHOLD)
   {
-    buzzflag=true;
+    fallState = true;
+  }
+  else
+  {
+    fallState = false;
+  }
+
+  // Serial.print((int)fallState);
+  // Serial.print(",");
+
+  if(fallState)
+  {
+    ++fallCount;
+  }
+  else
+  {
+    fallCount = 0;
+  }
+
+  if(fallCount > 100)
+  {
+    buzzflag = true;
+    fallCount = 0;
+  }
+  if(buzzflag==true && time_count>200)
+  { 
+    dSerial.listen();
+    dSerial.write("h",1);
+    sSerial.listen();
+    sSerial.write("h");
+    helpflag=true;
+
+      }
+  if(joystickinput == LOW)
+  {
+    
+   if(helpflag == false)
+   {
+     dSerial.listen();
+    dSerial.write("h",1);
+    sSerial.listen();
+    sSerial.write("h");
+    helpflag=true;
+   }
+   else
+   {
+     dSerial.listen();
+    dSerial.write("i",1);
+    sSerial.listen();
+     helpflag=false;
+   }
+   
+  }
+  if(buzzflag == true && (joystickinput == LOW || state == "o") )
+  {
+    buzzflag=false;
+    time_count=0;
+    state ="";
+    helpflag=false;
+    dSerial.listen();
+    dSerial.write("i",1);
+    sSerial.listen();
   }
   if(buzzflag==true)
   {
@@ -253,29 +330,10 @@ void loop() {
   {
     digitalWrite(BUZZER_OUT, LOW);
   }
-  int xAxisInput = analogRead(X_AXIS_PIN);
-  int yAxisInput = analogRead(Y_AXIS_PIN);
-  int joystickinput = digitalRead(SW_PIN);
-  if(buzzflag == true && joystickinput == LOW )
-  {
-    buzzflag=false; 
-    time_count=0;
-  }
-  if(buzzflag==true && time_count>500)
-  { dSerial.listen();
-    dSerial.write("help",4); 
-    sSerial.listen();
-  }
-  if(buzzflag == false && joystickinput == LOW)
-  {
-   dSerial.listen();
-   dSerial.write("help",4); 
-   sSerial.listen(); 
-  }
   for (int i = 0; i < sSerial.available(); i++) {
 
     char c = sSerial.read();
-    //Serial.println((char)c);
+   Serial.println((char)c);
     onInput = true;
     if (c != '\\') {
       if ('a' <= c && c <= 'z' || c == '$' || c == '%') {
@@ -288,7 +346,7 @@ void loop() {
       else if('0' <= c && c <= '9' && state == "s")
       {
         tempnum += c;
-      //  Serial.println(tempnum);   
+      //  Serial.println(tempnum);
       }
     } else {
       if (command == "$") {
@@ -297,9 +355,9 @@ void loop() {
       else if(command == "%")
       {
         state = "";
-        dSerial.listen();
         //Serial.println(tempnum);
         set_num();
+        dSerial.listen();
         send_num();
         sSerial.listen();
              }
@@ -310,8 +368,8 @@ void loop() {
       break;
     }
   }
-  
-  if (state == "x") { 
+
+  if (state == "x") {
     bt_flag = true;
     digitalWrite(BT_MODE_LED,HIGH);
     state = "";
@@ -322,16 +380,16 @@ void loop() {
   } else if (state == "q") {
     //bt flag on== 1 or off == 0
     if (bt_flag) {
-      sSerial.write("1");  
-  
+      sSerial.write("1");
+
     } else {
       // sSerial.print("0");
       sSerial.write("0");
-  
+
     }
     state = "";
 
-  } 
+  }
 
   if (bt_flag) {
     if (state == "f") {
@@ -365,9 +423,10 @@ void loop() {
       }
     }
   }
- 
+
   if (!onInput) {
     command = "";
   }
   time_count++;
+ 
 }
