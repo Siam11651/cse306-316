@@ -1,11 +1,6 @@
-addi $t1, $zero, 3
-subi $t1, $zero, 1
-add $t2, $t1, $t1
-sub $t3, $t2, $t1
-ori $t0, $zero, 5
-andi $t0, $t0, 4
-or $t4, $t0, $t1
-and $t3, $t1, $t2
-sll $t4, $t4, 2
-srl $t4, $t4, 1
-nor $t2, $t1, $t3
+label1:
+addi $t0, $zero, 4
+addi $t1, $zero, 5
+j label1
+addi $t1, $zero, 4
+beq $t0, $t1, label1
