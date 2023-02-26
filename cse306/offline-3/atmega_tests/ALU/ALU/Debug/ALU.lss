@@ -3,29 +3,29 @@ ALU.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         000000e4  00000000  00000000  00000054  2**1
+  0 .text         00000140  00000000  00000000  00000054  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .data         00000000  00800060  00800060  00000138  2**0
+  1 .data         00000000  00800060  00800060  00000194  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  2 .comment      00000030  00000000  00000000  00000138  2**0
+  2 .comment      00000030  00000000  00000000  00000194  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  00000168  2**2
+  3 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000001c4  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 00000020  00000000  00000000  000001a4  2**0
+  4 .debug_aranges 00000028  00000000  00000000  00000200  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000005a7  00000000  00000000  000001c4  2**0
+  5 .debug_info   00000642  00000000  00000000  00000228  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 00000526  00000000  00000000  0000076b  2**0
+  6 .debug_abbrev 000005a6  00000000  00000000  0000086a  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   0000024d  00000000  00000000  00000c91  2**0
+  7 .debug_line   00000305  00000000  00000000  00000e10  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  00000024  00000000  00000000  00000ee0  2**2
+  8 .debug_frame  00000050  00000000  00000000  00001118  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000002da  00000000  00000000  00000f04  2**0
+  9 .debug_str    00000330  00000000  00000000  00001168  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00000115  00000000  00000000  000011de  2**0
+ 10 .debug_loc    000001b3  00000000  00000000  00001498  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000010  00000000  00000000  000012f3  2**0
+ 11 .debug_ranges 00000018  00000000  00000000  0000164b  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -33,7 +33,7 @@ Disassembly of section .text:
 00000000 <__vectors>:
    0:	0c 94 2a 00 	jmp	0x54	; 0x54 <__ctors_end>
    4:	0c 94 34 00 	jmp	0x68	; 0x68 <__bad_interrupt>
-   8:	0c 94 34 00 	jmp	0x68	; 0x68 <__bad_interrupt>
+   8:	0c 94 36 00 	jmp	0x6c	; 0x6c <__vector_2>
    c:	0c 94 34 00 	jmp	0x68	; 0x68 <__bad_interrupt>
   10:	0c 94 34 00 	jmp	0x68	; 0x68 <__bad_interrupt>
   14:	0c 94 34 00 	jmp	0x68	; 0x68 <__bad_interrupt>
@@ -60,125 +60,196 @@ Disassembly of section .text:
   5a:	d8 e0       	ldi	r29, 0x08	; 8
   5c:	de bf       	out	0x3e, r29	; 62
   5e:	cd bf       	out	0x3d, r28	; 61
-  60:	0e 94 36 00 	call	0x6c	; 0x6c <main>
-  64:	0c 94 70 00 	jmp	0xe0	; 0xe0 <_exit>
+  60:	0e 94 58 00 	call	0xb0	; 0xb0 <main>
+  64:	0c 94 9e 00 	jmp	0x13c	; 0x13c <_exit>
 
 00000068 <__bad_interrupt>:
   68:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
 
-0000006c <main>:
+0000006c <__vector_2>:
+#include <avr/io.h>
+#define F_CPU 1000000 // Clock Frequency
+#include <util/delay.h>
+#include <avr/interrupt.h>
 
+ISR(INT1_vect) {
+  6c:	1f 92       	push	r1
+  6e:	0f 92       	push	r0
+  70:	0f b6       	in	r0, 0x3f	; 63
+  72:	0f 92       	push	r0
+  74:	11 24       	eor	r1, r1
+  76:	2f 93       	push	r18
+  78:	8f 93       	push	r24
+  7a:	9f 93       	push	r25
+	PORTB = PORTB | (0b10000000) ;	//turn on A[7:6] wait 1 s, turn off
+  7c:	88 b3       	in	r24, 0x18	; 24
+  7e:	80 68       	ori	r24, 0x80	; 128
+  80:	88 bb       	out	0x18, r24	; 24
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
+
+	__builtin_avr_delay_cycles(__ticks_dc);
+  82:	2f e3       	ldi	r18, 0x3F	; 63
+  84:	8d e0       	ldi	r24, 0x0D	; 13
+  86:	93 e0       	ldi	r25, 0x03	; 3
+  88:	21 50       	subi	r18, 0x01	; 1
+  8a:	80 40       	sbci	r24, 0x00	; 0
+  8c:	90 40       	sbci	r25, 0x00	; 0
+  8e:	e1 f7       	brne	.-8      	; 0x88 <__vector_2+0x1c>
+  90:	00 c0       	rjmp	.+0      	; 0x92 <__vector_2+0x26>
+  92:	00 00       	nop
+	_delay_ms(1000);
+	GIFR = GIFR | ( 1 << INTF1);
+  94:	8a b7       	in	r24, 0x3a	; 58
+  96:	80 68       	ori	r24, 0x80	; 128
+  98:	8a bf       	out	0x3a, r24	; 58
+	PORTB = PORTB & (0b01111111);
+  9a:	88 b3       	in	r24, 0x18	; 24
+  9c:	8f 77       	andi	r24, 0x7F	; 127
+  9e:	88 bb       	out	0x18, r24	; 24
+}
+  a0:	9f 91       	pop	r25
+  a2:	8f 91       	pop	r24
+  a4:	2f 91       	pop	r18
+  a6:	0f 90       	pop	r0
+  a8:	0f be       	out	0x3f, r0	; 63
+  aa:	0f 90       	pop	r0
+  ac:	1f 90       	pop	r1
+  ae:	18 95       	reti
+
+000000b0 <main>:
 
 int main(void)
 {
+	DDRD = 0b10000111;	//0b10000111			//D[3] interrrupt3 D[7] - Zero Flag,
+  b0:	87 e8       	ldi	r24, 0x87	; 135
+  b2:	81 bb       	out	0x11, r24	; 17
+
+	GICR = 1 << INT1;
+  b4:	80 e8       	ldi	r24, 0x80	; 128
+  b6:	8b bf       	out	0x3b, r24	; 59
+	MCUCSR = (1<<JTD);  MCUCSR = (1<<JTD);
+  b8:	84 bf       	out	0x34, r24	; 52
+  ba:	84 bf       	out	0x34, r24	; 52
+	MCUCR = 1 << ISC11;
+  bc:	88 e0       	ldi	r24, 0x08	; 8
+  be:	85 bf       	out	0x35, r24	; 53
+	MCUCR = 1 << ISC10;
+  c0:	84 e0       	ldi	r24, 0x04	; 4
+  c2:	85 bf       	out	0x35, r24	; 53
 	// setting output and input modes
-	DDRA = 0x00;	//0b00000000			// A[3:0], B[7:4]
-  6c:	1a ba       	out	0x1a, r1	; 26
-	DDRB = 0xF8;	//0b11111000			// ALUOp B[2:0]
-  6e:	88 ef       	ldi	r24, 0xF8	; 248
-  70:	87 bb       	out	0x17, r24	; 23
-	DDRD = 0x8f;	//0b10001111			// D[7] - Zero Flag, D[3:0] - Output
-  72:	8f e8       	ldi	r24, 0x8F	; 143
-  74:	81 bb       	out	0x11, r24	; 17
+	DDRA = 0b00000000;	//0b00000000			// in1[3:0], in2[7:4]
+  c4:	1a ba       	out	0x1a, r1	; 26
+	DDRB = 0b01111000;	//0b01111000			// ALUOp B[2:0], B[7] interrupt output, B[6:3] output of operation
+  c6:	88 e7       	ldi	r24, 0x78	; 120
+  c8:	87 bb       	out	0x17, r24	; 23
+	
 	uint8_t control_bits;
 	uint8_t in1, in2, out;
-
+	sei();
+  ca:	78 94       	sei
 	while (1)
 	{
 		control_bits = PINB & 0b00000111;	// ALUOp B[2:0] 
-  76:	96 b3       	in	r25, 0x16	; 22
-  78:	97 70       	andi	r25, 0x07	; 7
+  cc:	96 b3       	in	r25, 0x16	; 22
+  ce:	97 70       	andi	r25, 0x07	; 7
 
 		in1 = PINA & 0b00001111;	// A[3:0]
-  7a:	89 b3       	in	r24, 0x19	; 25
-  7c:	8f 70       	andi	r24, 0x0F	; 15
-		in2 = (PINA & 0b11110000) >> 4;	// B[7:4]
-  7e:	29 b3       	in	r18, 0x19	; 25
-  80:	42 2f       	mov	r20, r18
-  82:	42 95       	swap	r20
-  84:	4f 70       	andi	r20, 0x0F	; 15
+  d0:	89 b3       	in	r24, 0x19	; 25
+  d2:	8f 70       	andi	r24, 0x0F	; 15
+		in2 = (PINA & 0b11110000) >> 4;	// A[7:4]
+  d4:	29 b3       	in	r18, 0x19	; 25
+  d6:	42 2f       	mov	r20, r18
+  d8:	42 95       	swap	r20
+  da:	4f 70       	andi	r20, 0x0F	; 15
 		out = 0;
 
 		if(control_bits == 0) {
-  86:	91 11       	cpse	r25, r1
-  88:	02 c0       	rjmp	.+4      	; 0x8e <main+0x22>
+  dc:	91 11       	cpse	r25, r1
+  de:	02 c0       	rjmp	.+4      	; 0xe4 <main+0x34>
 			out = in1 + in2;
-  8a:	84 0f       	add	r24, r20
-  8c:	24 c0       	rjmp	.+72     	; 0xd6 <main+0x6a>
+  e0:	84 0f       	add	r24, r20
+  e2:	24 c0       	rjmp	.+72     	; 0x12c <main+0x7c>
 		} else if(control_bits == 1){
-  8e:	91 30       	cpi	r25, 0x01	; 1
-  90:	11 f4       	brne	.+4      	; 0x96 <main+0x2a>
+  e4:	91 30       	cpi	r25, 0x01	; 1
+  e6:	11 f4       	brne	.+4      	; 0xec <main+0x3c>
 			out = in1 - in2;
-  92:	84 1b       	sub	r24, r20
-  94:	20 c0       	rjmp	.+64     	; 0xd6 <main+0x6a>
+  e8:	84 1b       	sub	r24, r20
+  ea:	20 c0       	rjmp	.+64     	; 0x12c <main+0x7c>
 		} else if(control_bits == 2) {
-  96:	92 30       	cpi	r25, 0x02	; 2
-  98:	11 f4       	brne	.+4      	; 0x9e <main+0x32>
+  ec:	92 30       	cpi	r25, 0x02	; 2
+  ee:	11 f4       	brne	.+4      	; 0xf4 <main+0x44>
 			out = in1 & in2;
-  9a:	84 23       	and	r24, r20
-  9c:	1c c0       	rjmp	.+56     	; 0xd6 <main+0x6a>
+  f0:	84 23       	and	r24, r20
+  f2:	1c c0       	rjmp	.+56     	; 0x12c <main+0x7c>
 		} else if(control_bits == 3) {
-  9e:	93 30       	cpi	r25, 0x03	; 3
-  a0:	11 f4       	brne	.+4      	; 0xa6 <main+0x3a>
+  f4:	93 30       	cpi	r25, 0x03	; 3
+  f6:	11 f4       	brne	.+4      	; 0xfc <main+0x4c>
 			out = in1 | in2;
-  a2:	84 2b       	or	r24, r20
-  a4:	18 c0       	rjmp	.+48     	; 0xd6 <main+0x6a>
+  f8:	84 2b       	or	r24, r20
+  fa:	18 c0       	rjmp	.+48     	; 0x12c <main+0x7c>
 		} else if(control_bits == 4) {
-  a6:	94 30       	cpi	r25, 0x04	; 4
-  a8:	19 f4       	brne	.+6      	; 0xb0 <main+0x44>
+  fc:	94 30       	cpi	r25, 0x04	; 4
+  fe:	19 f4       	brne	.+6      	; 0x106 <main+0x56>
 			out = ~(in1 | in2);
-  aa:	84 2b       	or	r24, r20
-  ac:	80 95       	com	r24
-  ae:	13 c0       	rjmp	.+38     	; 0xd6 <main+0x6a>
+ 100:	84 2b       	or	r24, r20
+ 102:	80 95       	com	r24
+ 104:	13 c0       	rjmp	.+38     	; 0x12c <main+0x7c>
 		} else if(control_bits == 5) {
-  b0:	95 30       	cpi	r25, 0x05	; 5
-  b2:	29 f4       	brne	.+10     	; 0xbe <main+0x52>
+ 106:	95 30       	cpi	r25, 0x05	; 5
+ 108:	29 f4       	brne	.+10     	; 0x114 <main+0x64>
 			out = in1 << in2;
-  b4:	01 c0       	rjmp	.+2      	; 0xb8 <main+0x4c>
-  b6:	88 0f       	add	r24, r24
-  b8:	4a 95       	dec	r20
-  ba:	ea f7       	brpl	.-6      	; 0xb6 <main+0x4a>
-  bc:	0c c0       	rjmp	.+24     	; 0xd6 <main+0x6a>
+ 10a:	01 c0       	rjmp	.+2      	; 0x10e <main+0x5e>
+ 10c:	88 0f       	add	r24, r24
+ 10e:	4a 95       	dec	r20
+ 110:	ea f7       	brpl	.-6      	; 0x10c <main+0x5c>
+ 112:	0c c0       	rjmp	.+24     	; 0x12c <main+0x7c>
 		} else if(control_bits == 6) {
-  be:	96 30       	cpi	r25, 0x06	; 6
-  c0:	49 f4       	brne	.+18     	; 0xd4 <main+0x68>
+ 114:	96 30       	cpi	r25, 0x06	; 6
+ 116:	49 f4       	brne	.+18     	; 0x12a <main+0x7a>
 			out = in1 >> in2;
-  c2:	28 2f       	mov	r18, r24
-  c4:	30 e0       	ldi	r19, 0x00	; 0
-  c6:	c9 01       	movw	r24, r18
-  c8:	02 c0       	rjmp	.+4      	; 0xce <main+0x62>
-  ca:	95 95       	asr	r25
-  cc:	87 95       	ror	r24
-  ce:	4a 95       	dec	r20
-  d0:	e2 f7       	brpl	.-8      	; 0xca <main+0x5e>
-  d2:	01 c0       	rjmp	.+2      	; 0xd6 <main+0x6a>
+ 118:	28 2f       	mov	r18, r24
+ 11a:	30 e0       	ldi	r19, 0x00	; 0
+ 11c:	c9 01       	movw	r24, r18
+ 11e:	02 c0       	rjmp	.+4      	; 0x124 <main+0x74>
+ 120:	95 95       	asr	r25
+ 122:	87 95       	ror	r24
+ 124:	4a 95       	dec	r20
+ 126:	e2 f7       	brpl	.-8      	; 0x120 <main+0x70>
+ 128:	01 c0       	rjmp	.+2      	; 0x12c <main+0x7c>
 	{
 		control_bits = PINB & 0b00000111;	// ALUOp B[2:0] 
 
 		in1 = PINA & 0b00001111;	// A[3:0]
-		in2 = (PINA & 0b11110000) >> 4;	// B[7:4]
+		in2 = (PINA & 0b11110000) >> 4;	// A[7:4]
 		out = 0;
-  d4:	80 e0       	ldi	r24, 0x00	; 0
+ 12a:	80 e0       	ldi	r24, 0x00	; 0
 			out = in1 << in2;
 		} else if(control_bits == 6) {
 			out = in1 >> in2;
 		}
 
 		out = out & 0b00001111;	
-  d6:	8f 70       	andi	r24, 0x0F	; 15
-		if(!out) {	// out == 0b00000000
-  d8:	09 f4       	brne	.+2      	; 0xdc <main+0x70>
+ 12c:	8f 70       	andi	r24, 0x0F	; 15
+		if(!out) {	// out == 0b00000000 so 0 flag on
+ 12e:	09 f4       	brne	.+2      	; 0x132 <main+0x82>
 			out = out | 0b10000000;
-  da:	80 68       	ori	r24, 0x80	; 128
+ 130:	80 68       	ori	r24, 0x80	; 128
 		}
-
-		PORTD = out;
-  dc:	82 bb       	out	0x12, r24	; 18
+// out = 0bxxxxVVVV, we have to shift this value by 3 times and output in PORTB[6:3]
+		PORTB = (out << 3);
+ 132:	88 0f       	add	r24, r24
+ 134:	88 0f       	add	r24, r24
+ 136:	88 0f       	add	r24, r24
+ 138:	88 bb       	out	0x18, r24	; 24
+		
 	}
-  de:	cb cf       	rjmp	.-106    	; 0x76 <main+0xa>
+ 13a:	c8 cf       	rjmp	.-112    	; 0xcc <main+0x1c>
 
-000000e0 <_exit>:
-  e0:	f8 94       	cli
+0000013c <_exit>:
+ 13c:	f8 94       	cli
 
-000000e2 <__stop_program>:
-  e2:	ff cf       	rjmp	.-2      	; 0xe2 <__stop_program>
+0000013e <__stop_program>:
+ 13e:	ff cf       	rjmp	.-2      	; 0x13e <__stop_program>

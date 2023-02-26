@@ -8,24 +8,36 @@
 #include <avr/io.h>
 #define F_CPU 1000000 // Clock Frequency
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
+ISR(INT1_vect) {
+	PORTB = PORTB | (0b10000000) ;	//turn on A[7:6] wait 1 s, turn off
+	_delay_ms(1000);
+	GIFR = GIFR | ( 1 << INTF1);
+	PORTB = PORTB & (0b01111111);
+}
 
 int main(void)
 {
-	// setting output and input modes
-	DDRA = 0x00;	//0b00000000			// A[3:0], B[7:4]
-	DDRB = 0xF8;	//0b11111000			// ALUOp B[2:0]
-	DDRD = 0x8f;	//0b10001111			// D[7] - Zero Flag, D[3:0] - Output
+	DDRD = 0b10000111;	//0b10000111			//D[3] interrrupt3 D[7] - Zero Flag,
 
+	GICR = 1 << INT1;
+	MCUCSR = (1<<JTD);  MCUCSR = (1<<JTD);
+	MCUCR = 1 << ISC11;
+	MCUCR = 1 << ISC10;
+	// setting output and input modes
+	DDRA = 0b00000000;	//0b00000000			// in1[3:0], in2[7:4]
+	DDRB = 0b01111000;	//0b01111000			// ALUOp B[2:0], B[7] interrupt output, B[6:3] output of operation
+	
 	uint8_t control_bits;
 	uint8_t in1, in2, out;
-
+	sei();
 	while (1)
 	{
 		control_bits = PINB & 0b00000111;	// ALUOp B[2:0] 
 
 		in1 = PINA & 0b00001111;	// A[3:0]
-		in2 = (PINA & 0b11110000) >> 4;	// B[7:4]
+		in2 = (PINA & 0b11110000) >> 4;	// A[7:4]
 		out = 0;
 
 		if(control_bits == 0) {
@@ -48,8 +60,9 @@ int main(void)
 		if(!out) {	// out == 0b00000000 so 0 flag on
 			out = out | 0b10000000;
 		}
-
-		PORTD = out;
+// out = 0bxxxxVVVV, we have to shift this value by 3 times and output in PORTB[6:3]
+		PORTB = (out << 3);
+		
 	}
 }
 

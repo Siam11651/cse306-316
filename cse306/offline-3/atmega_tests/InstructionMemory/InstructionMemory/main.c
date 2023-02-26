@@ -9,22 +9,34 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-uint16_t INSTRUCTIONS[1<<8] = {
-	0x206f, 0x2013, 0x702e, 0xe127, 0x6123, 0xb724, 0x5213, 0xf221, 0x8321, 0xa1c0, 0x1331, 0xd224, 0x5610, 0x7661, 0x5620, 0x7661, 0xa1a0, 0x4727, 0x9421, 0x3115, 0x2661, 0xd620, 0x0241, 0x2661, 0xd610, 0xa1c0, 0x8271, 0xa110
+uint16_t INSTRUCTIONS[12] = {
+	0x306f,
+	0x3013,
+	0xc011,
+	0x6112,
+	0x0213,
+	0x7075,
+	0xe774,
+	0x2714,
+	0xb123,
+	0x4442,
+	0xa441,
+	0x5132
 };
+
+uint8_t pc = -1;
+uint16_t instruction;
 
 int main(void)
 {
-	
+	 
 	// setting up input output mode
     DDRA = 0b00000000;	// input pc
+	PORTA = 0x00;
 	
 	// Instruction : D[7:0]B[7:0]
 	DDRB = 0b11111111;	// lower 8-bits of instruction
 	DDRD = 0b11111111;	// upper 8-bits of instruction
-	
-	uint8_t pc = -1;
-	uint16_t instruction;
 	
 	while (1) 
     {
