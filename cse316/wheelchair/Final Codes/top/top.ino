@@ -8,11 +8,13 @@ String num = "Not Set Yet"; //Initialized variable to store receive
 String tempnum;
 String state;
 String printline="Operating....    ";
+String prebpm = "BPM:";
 int count=0;
+int start_count=0;
 const int numberStartAddress=0;
 bool started = false;
 int message_sent=0;
-SoftwareSerial dSerial(11, 12);
+//SoftwareSerial dSerial(4, 5);
 SoftwareSerial sSerial(2, 3);
 const int PulseWire = 0;       // PulseSensor PURPLE WIRE connected to ANALOG PIN 0
 const int LED = LED_BUILTIN;          // The on-board Arduino LED, close to PIN 13.
@@ -22,6 +24,9 @@ int Threshold = 550;           // Determine which Signal to "count as a beat" an
                                
 PulseSensorPlayground pulseSensor;  // Creates an instance of the PulseSensorPlayground object called "pulseSensor"
 
+int mybpm;
+bool panicstate=false;
+int panic_count=0;
 
 void set_num()
 {
@@ -56,8 +61,8 @@ void setup() {
   // Print a message on both lines of the LCD.
   Serial.begin(9600);
   sSerial.begin(4800);
-  dSerial.begin(19200);
-  read_num();  
+  //dSerial.begin(9600);
+//  read_num();  
   // Configure the PulseSensor object, by assigning our variables to it. 
   pulseSensor.analogInput(PulseWire);   
   pulseSensor.blinkOnPulse(LED);       //auto-magically blink Arduino's LED with heartbeat.
@@ -70,7 +75,6 @@ void setup() {
 }
 
 void loop() {
-  int mybpm;
   if (pulseSensor.sawStartOfBeat()) {            // Constantly test to see if "a beat happened".
 mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor object that returns BPM as an "int".
                                                // "myBPM" hold this BPM value now. 
@@ -82,15 +86,14 @@ mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor o
 }
 
   delay(20);                    // considered best practice in a simple sketch.
-
+mybpm = mybpm*3;
 }
                       // Print the value inside of myBPM. 
 
-
-  for(int i=0;i<dSerial.available();i++)
+  for(int i=0;i<Serial.available();i++)
   {
-    char x =  dSerial.read();
-    Serial.println(x);
+    char x =  Serial.read();
+    // Serial.println(x);
     if(x == 's')
     {
       state = "s";
@@ -110,7 +113,7 @@ mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor o
    {
      sSerial.listen();
      SendMessage(num, "Need Help     ");
-     dSerial.listen();
+     //dSerial.listen();
      started = true;
      message_sent=1;
    }
@@ -133,14 +136,6 @@ mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor o
    if(state == "h")
    {
      printline="Need Help   ";
-  //    if(!started && message_sent==0)
-  //  {
-  //    sSerial.listen();
-  //    SendMessage(num, "Need Help");
-  //    dSerial.listen();
-  //    started = true;
-  //    message_sent=1;
-  //  }
    }
   else if(state == "i")
   {
@@ -156,16 +151,29 @@ mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor o
   {
     state = "x";
   }
-  if(mybpm < 25)
+  start_count++;
+  if(mybpm < 75 )
   {
-    state = "h";
-    printline="Need Help";
-    sSerial.listen();
-    SendMessage(num, "Need Help     ");
-    dSerial.listen();
-    started = true;
-    message_sent=1;
+    panicstate=true;
+    panic_count++;
   }
+  else
+  {
+    panicstate=false;
+    panic_count=0;
+  }
+  if(panicstate==true && panic_count > 200 )
+  {
+    state = "h"; 
+      printline="Need Help";
+     if(!started && message_sent==0)
+   {
+     sSerial.listen();
+     SendMessage(num, "Need Help     ");
+     //dSerial.listen();
+     started = true;
+     message_sent=1;
+   }  }
   // sSerial.listen();
 
   // if(sSerial.available())
@@ -187,7 +195,7 @@ mybpm = pulseSensor.getBeatsPerMinute();  // Calls function on our pulseSensor o
   lcd.setCursor(0,1);   //Move cursor to character 2 on line 1
   lcd.print(printline);
   lcd.setCursor(10, 1);
-  lcd.print("BPM: ");
+  lcd.print(prebpm);
   lcd.setCursor(14,1);
   lcd.print(mybpm);
 }

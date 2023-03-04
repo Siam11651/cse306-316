@@ -46,7 +46,7 @@ SoftwareSerial sSerial(11, 12);
 #define IN_RIGHT2 9  // motor B spin 2
 
 // speed factor
-#define FACTOR 0.3  // average fraction of total voltage (PWM)
+#define FACTOR 0.8  // average fraction of total voltage (PWM)
 
 // buzzer
 #define BUZZER_OUT 5
@@ -135,29 +135,10 @@ void read_mpu()
   accx=a.acceleration.x;
   accy=a.acceleration.y;
   accz=a.acceleration.z;
-//  Serial.print(accx);
-//  Serial.print(",");
-//  Serial.print(accy);
-//  Serial.print(",");
-//  Serial.print(accx);
-//  Serial.print(",");
-//  acceleration = a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y + a.acceleration.z * a.acceleration.z;
-////  Serial.print(acceleration);
-//  Serial.print(",");
   gyrox=absolute(g.gyro.x);
   gyroy=absolute(g.gyro.y);
   gyroz=absolute(g.gyro.z);
-//  Serial.print(gyrox);
-//  Serial.print(",");
-//  Serial.print(gyroy);
-//  Serial.print(",");
-//  Serial.print(gyroz);
-//  Serial.print(",");
- /* if (acceleration > 130 || acceleration < 70) {
-    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
 
-      }
-  */
 }
 void set_num()
 {
@@ -175,40 +156,35 @@ void read_num()
     for (int offset = 0; offset < 11; offset++) {
 
       tempnum += (char)EEPROM.read(numberStartAddress + offset);
-      //Serial.println((char)EEPROM.read(numberStartAddress + offset));
-      //delay(1000);
+      
     }
 }
 
 void send_num()
 {
-  char temp[13];
-  temp[0]='s';
-  for(int i=1;i<12;i++)
+  String temp;
+  temp+='s';
+  for(int i=0;i<11;i++)
   {
-    temp[i]=tempnum[i-1];
+    temp+=tempnum[i];
   }
-  temp[12]='x';
-  char s[8];
+  temp+='x';
   for(int i=0;i<8;i++)
   {
-    s[i]=temp[i];
+    dSerial.write(temp[i]);
   }
-  dSerial.listen();
-  dSerial.write(s,8);
-  char s1[8];
-  for(int i=8;i<13;i++)
-  {
-    s1[i-8]=temp[i];
-  }
-  dSerial.listen();
-  dSerial.write(s1,5);
+   for(int i=8;i<13;i++)
+   {
+     
+     dSerial.write(temp[i]);
+     
+   }
   delay(100);
 }
 void setup() {
 
   Serial.begin(115200);
-  dSerial.begin(19200);
+  dSerial.begin(9600);
   sSerial.begin(9600);
   pinMode(SW_PIN, INPUT);
   digitalWrite(SW_PIN, HIGH);
@@ -250,6 +226,7 @@ void setup() {
   // file = SD.open("number.txt", FILE_WRITE);
   
   delay(100);
+  read_num();
   send_num();
   sSerial.listen();
  
@@ -305,6 +282,8 @@ void loop() {
       dSerial.listen();
       dSerial.write("h",1);
       sSerial.listen();
+      sSerial.write("h",1);
+      delay(1000);
       helpflag=true;
       }
     }
@@ -318,8 +297,9 @@ void loop() {
       buzzflag=true;
       dSerial.listen();
       dSerial.write("h",1);
-      delay(1000);
       sSerial.listen();
+      sSerial.write("h",1);
+      delay(1000);
       helpflag=true;
       }
       
@@ -332,9 +312,10 @@ void loop() {
       buzzflag=false;
       dSerial.listen();
       dSerial.write("i",1);
-      delay(1000);
       sSerial.listen();
+      sSerial.write("h",1);
       helpflag=false;
+      delay(1000);
       }
     }
     state ="";
@@ -350,7 +331,7 @@ void loop() {
   for (int i = 0; i < sSerial.available(); i++) {
 
     char c = sSerial.read();
-   Serial.println((char)c);
+   //Serial.println((char)c);
     onInput = true;
     if (c != '\\') {
       if ('a' <= c && c <= 'z' || c == '$' || c == '%') {
@@ -367,7 +348,7 @@ void loop() {
       else if('0' <= c && c <= '9' && state == "s")
       {
         tempnum += c;
-        Serial.println(tempnum);
+      //  Serial.println(tempnum);
       }
     } else {
       if (command == "$") {
@@ -376,7 +357,7 @@ void loop() {
       else if(command == "%")
       {
         state = "";
-        Serial.println(tempnum);
+      //  Serial.println(tempnum);
         set_num();
         dSerial.listen();
         send_num();
