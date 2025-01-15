@@ -13,6 +13,6 @@ In the prototype wheelchair, there were -
 - Finally a **LCD screen** to give system status to the user
 
 The project was a team effort, with all of our members pitching in, hoping to make it a success. We also gratefully thank our supervisors, 
-[Tareq Mahmood Sir](https://cse.buet.ac.bd/faculty/faculty_detail/tareq) sir and [Md. Masum Mushfiq](https://cse.buet.ac.bd/faculty/faculty_detail/mushfiq) sir for their guidance and motivation for our project. With their help, the project ended smoothly and was **selected as one of the top 10 projects in our class**, out of 20 projects.
+[Tareq Mahmood Sir](https://cse.buet.ac.bd/faculty/faculty_detail/tareq) sir and [Md. Masum Mushfiq](https://cse.buet.ac.bd/faculty/faculty_detail/mushfiq) sir for their guidance and motivation for our project. With their help, the project ended smoothly and was **selected as one of the top 5 projects in our class**, out of 20 projects.
 
 A video presentation of the completed prototype can be viewed [**in this youtube link**](https://www.youtube.com/watch?v=zR020Ssu_r0)
